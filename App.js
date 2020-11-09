@@ -26,5 +26,27 @@ export default class App extends React.Component {
 var TabNavigator=createBottomTabNavigator({
   Transaction:{screen:TransactionScreen},
   Search:{screen:SearchScreen}
+},
+{
+  defaultNavigationOptions:({navigation})=>({
+    tabBarIcon:({})=>{
+      const routeName=navigation.state.routeName;
+      if(routeName==="Transaction"){
+        return(
+          <Image
+          style={{width:40,height:40}}
+          source={require("./assets/book.png")}/>
+        )
+
+        
+      }else if(routeName==="Search"){
+        return(
+          <Image
+          style={{width:40,height:40}}
+          source={require("./assets/searchingbook.png")}/>
+        )
+      }
+    }
+  })
 })
 var AppContainer=createAppContainer(TabNavigator);
