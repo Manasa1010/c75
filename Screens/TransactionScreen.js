@@ -1,5 +1,5 @@
 import * as React from "react";
-import {View ,Text,TouchableOpacity, StyleSheet,Image,TextInput} from "react-native";
+import {View ,Text,TouchableOpacity, StyleSheet,Image,TextInput,KeyboardAvoidingView,ToastAndroid} from "react-native";
 import * as Permissions from "expo-permissions";
 import {BarCodeScanner} from "expo-barcode-scanner";
 import * as firebase from "firebase";
@@ -51,9 +51,11 @@ export default class TransactionScreen extends React.Component{
          if(book.bookAvailability){
              this.initiateBookIssue();
              transactionMessage="bookIssued"
+             ToastAndroid.show(transactionMessage,ToastAndroid.LONG);
          }else{
              this.initiateBookReturn();
              transactionMessage="bookReturned";
+             ToastAndroid.show(transactionMessage,ToastAndroid.LONG)
          }
          }) 
          this.setState({
@@ -95,7 +97,7 @@ export default class TransactionScreen extends React.Component{
         const hasCameraPermission=this.state.hasCameraPermission;
         const scanned=this.state.scanned;
         const buttonState=this.state.buttonState;
-
+ToastAndroid.show("Hi",ToastAndroid.SHORT);
         if(buttonState!=="normal" && hasCameraPermission===true){
            return(
                 <BarCodeScanner 
@@ -105,13 +107,19 @@ export default class TransactionScreen extends React.Component{
            )
         }else if (buttonState==="normal"){
             return(
-                <View style={{flex:1,justifyContent:"center",alignItems:"center"}}>
+                <KeyboardAvoidingView style={styles.container} behavior = "padding" enabled >
                     <View>
                         <Image style={{width:200,height:200}} source={require("../assets/booklogo.jpg")}/>
                         <Text style={{textAlign:"center",fontSize:30}}></Text>
                     </View>
                     <View style={styles.inputView}>
-                        <TextInput placeholder="book id"
+                        <TextInput 
+                        onChangeText={text=>{
+                            this.setState({
+                                scannedBookID:text
+                            })
+                        }}
+                         placeholder="book id"
                         value={this.state.scannedBookID}
                         style={styles.inputBox}/>
                         <TouchableOpacity 
@@ -121,7 +129,13 @@ export default class TransactionScreen extends React.Component{
                         style={styles. scanButton}><Text>Scan</Text></TouchableOpacity>
                     </View>
                     <View style={styles.inputView}>
-                        <TextInput placeholder="student id"
+                        <TextInput 
+                        onChangeText={(text)=>{
+                            this.setState({
+                                scannedStudentID:text
+                            })
+                        }}
+                        placeholder="student id"
                          value={this.state.scannedStudentID}
                         style={styles.inputBox}/>
                         <TouchableOpacity 
@@ -136,7 +150,7 @@ export default class TransactionScreen extends React.Component{
                             this.handleTransaction
                         }}
                         style={styles. scanButton}><Text>Submit</Text></TouchableOpacity>
-                </View>
+                </KeyboardAvoidingView>
                 )
         }
        
@@ -155,5 +169,8 @@ var styles=StyleSheet.create({
     },inputView:{
         flexDirection:"row",
 margin:20
+    },
+    container:{
+        flex:1,justifyContent:"center",alignItems:"center"
     }
 })
