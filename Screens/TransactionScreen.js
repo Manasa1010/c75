@@ -1,5 +1,5 @@
 import * as React from "react";
-import {View ,Text,TouchableOpacity, StyleSheet,Image,TextInput,KeyboardAvoidingView,ToastAndroid} from "react-native";
+import {View ,Text,TouchableOpacity, StyleSheet,Image,TextInput,KeyboardAvoidingView,ToastAndroid, Alert} from "react-native";
 import * as Permissions from "expo-permissions";
 import {BarCodeScanner} from "expo-barcode-scanner";
 import * as firebase from "firebase";
@@ -44,27 +44,103 @@ export default class TransactionScreen extends React.Component{
       
     }
     handleTransaction=async()=>{
-        var transactionMessage=null
-         db.collection("books").doc(this.state.scannedBookID).get()
-         .then((doc)=>{
-         var book=doc.data();
-         if(book.bookAvailability){
+
+        var transactionType=await this.checkBookEligibility();
+          if(!transactionType){
+                Alert.alert("thisBookDoesnotexsists")
+                this.setState({
+                scannedStudentID:"",
+                scannedBookID:""
+                
+            })
+        }
+         else if(transactionType==="issue"){
+             var isStudentEligible=await this.checkStudentEligibilityForIssue();
+             if(isStudentEligible){
              this.initiateBookIssue();
-             transactionMessage="bookIssued"
-             ToastAndroid.show(transactionMessage,ToastAndroid.LONG);
+             
+             ToastAndroid.show("bookIssued",ToastAndroid.LONG);
+             }   
          }else{
+             var isStudentEligible= await this.checkStudentEligibilityForReturn();
+             if(isStudentEligible){
              this.initiateBookReturn();
-             transactionMessage="bookReturned";
-             ToastAndroid.show(transactionMessage,ToastAndroid.LONG)
+             
+             ToastAndroid.show("bookReturned",ToastAndroid.LONG)
          }
-         }) 
-         this.setState({
-             transactionMessage:transactionMessage
-         }) 
+         }
     }
+
+    checkStudentEligibilityForIssue=async()=>{
+        const studentRef=await db.collection("students").where("studentID","==",this.state.scannedStudentID).get()
+        var isStudentEligible="";
+        if(studentRef.docs.length===0){
+            this.setState({
+                scannedBookID:"",
+                scannedStudentID:""
+            })
+            isStudentEligible=false 
+            Alert.alert("studentID does not exists")   
+            
+        }else{
+            studentRef.docs.map((doc)=>{
+              var student=doc.data();
+              if(student.numberOfBooksIssued<2){
+                  isStudentEligible=true;
+              }else{
+                  isStudentEligible=false;
+                  Alert.alert("The student is not eligible as he has already received 2 books");
+                  this.setState({
+                    scannedBookID:"",
+                    scannedStudentID:""
+                  })
+              }
+            })
+        }
+        return isStudentEligible;
+
+        
+    }
+    checkBookEligibility=async()=>{
+        const bookRef=await db.collection("books").where("bookID","==",this.state.scannedBookID).get()
+        var transactionType="";
+        if(bookRef.docs.length===0){
+            transactionType=false;
+        }else{
+            bookRef.docs.map((doc)=>{
+                var book=doc.data();
+                if(book.bookAvailability){
+                    transactionType="issue";
+                }else{
+                    transactionType="return";
+                }
+            })
+        }
+        return transactionType;
+    }
+
+    checkStudentEligibilityForReturn=async()=>{
+        const transactionRef=await db.collection("Transaction").where("bookID","==",this.state.scannedBookID).limit(1).get()
+        var isStudentEligible="";
+        transactionRef.docs.map((doc)=>{
+            var lastBookTransaction=doc.data();
+            if(lastBookTransaction.studentID===this.state.scannedStudentID){
+                isStudentEligible=true;
+            }else{
+            isStudentEligible=false;
+            Alert.alert("This book was not issued by this student");
+            this.setState({
+                scannedBookID:"",
+                scannedStudentID:""
+              })
+            }
+        })
+        return isStudentEligible;
+    }
+
     initiateBookIssue=async()=>{
         db.collection("transactions").add({
-            studentID:this.state.scaanedStudentID,
+            studentID:this.state.scannedStudentID,
             bookId:this.state.scannedBookID,
             date:firebase.firestore.Timestamp.now().toDate(),
             transactionType:"issue"
@@ -72,7 +148,7 @@ export default class TransactionScreen extends React.Component{
         db.collection("books").doc(this.state.scannedBookID).update({
             bookAvailability:false
         })
-        db.collection("student").doc(this.state.scannedStudentID).update({
+        db.collection("students").doc(this.state.scannedStudentID).update({
             numberOfBooksIssued:firebase.firestore.FieldValue.increment(1)
         })
         this.setState({scannedStudentID:"",scannedBookID:""})
@@ -80,7 +156,7 @@ export default class TransactionScreen extends React.Component{
 
     initiateBookReturn=async()=>{
         db.collection("transactions").add({
-            studentID:this.state.scaanedStudentID,
+            studentID:this.state.scannedStudentID,
             bookId:this.state.scannedBookID,
             date:firebase.firestore.Timestamp.now().toDate(),
             transactionType:"return"
@@ -97,7 +173,7 @@ export default class TransactionScreen extends React.Component{
         const hasCameraPermission=this.state.hasCameraPermission;
         const scanned=this.state.scanned;
         const buttonState=this.state.buttonState;
-ToastAndroid.show("Hi",ToastAndroid.SHORT);
+
         if(buttonState!=="normal" && hasCameraPermission===true){
            return(
                 <BarCodeScanner 
@@ -147,7 +223,7 @@ ToastAndroid.show("Hi",ToastAndroid.SHORT);
 
                     <TouchableOpacity 
                         onPress={()=>{
-                            this.handleTransaction
+                            this.handleTransaction()
                         }}
                         style={styles. scanButton}><Text>Submit</Text></TouchableOpacity>
                 </KeyboardAvoidingView>
@@ -158,12 +234,12 @@ ToastAndroid.show("Hi",ToastAndroid.SHORT);
 }
 var styles=StyleSheet.create({
     inputBox:{
-        width:100,
-        height:100,
+        width:150,
+        height:50,
         borderWidth:2
     },
     scanButton:{
-        width:50,
+        width:150,
         height:50,
         borderWidth:2
     },inputView:{
