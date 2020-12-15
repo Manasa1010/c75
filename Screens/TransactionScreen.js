@@ -139,9 +139,9 @@ export default class TransactionScreen extends React.Component{
     }
 
     initiateBookIssue=async()=>{
-        db.collection("transactions").add({
+        db.collection("Transaction").add({
             studentID:this.state.scannedStudentID,
-            bookId:this.state.scannedBookID,
+            bookID:this.state.scannedBookID,
             date:firebase.firestore.Timestamp.now().toDate(),
             transactionType:"issue"
         })
@@ -155,16 +155,16 @@ export default class TransactionScreen extends React.Component{
     }
 
     initiateBookReturn=async()=>{
-        db.collection("transactions").add({
+        db.collection("Transaction").add({
             studentID:this.state.scannedStudentID,
-            bookId:this.state.scannedBookID,
+            bookID:this.state.scannedBookID,
             date:firebase.firestore.Timestamp.now().toDate(),
             transactionType:"return"
         })
         db.collection("books").doc(this.state.scannedBookID).update({
             bookAvailability:true
         })
-        db.collection("student").doc(this.state.scannedStudentID).update({
+        db.collection("students").doc(this.state.scannedStudentID).update({
             numberOfBooksIssued:firebase.firestore.FieldValue.increment(-1)
         })
         this.setState({scannedStudentID:"",scannedBookID:""})

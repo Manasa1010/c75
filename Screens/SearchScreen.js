@@ -2,14 +2,14 @@ import * as React from "react";
 import {View,Text,TouchableOpacity,FlatList,StyleSheet,TextInput} from "react-native";
 import {ScrollView} from "react-native-gesture-handler"
 
-import db from "./config"
+import db from "../config"
 
 export default class SearchScreen extends React.Component{
 constructor(props){
     super(props)
     this.state={
         allTransaction:[],
-        lastVisibleTransaction=null,
+        lastVisibleTransaction:null,
         search:""
     }
 }
@@ -68,13 +68,22 @@ searchTransaction=async(text)=>{
 render(){
     return(
         <View style={{flex:1,justifyContent:"center",alignItems:"center"}}>
-            <View style={{flexDirection:"row"}}>
+            <View style={{flexDirection:"row",flex:1,justifyContent:"center",marginTop:25}}>
             <TextInput style={styles.inputBox} onChangeText={text=>(
                 this.setState({
                  search:text
                 })
-            )}></TextInput>
-            <TouchableOpacity style={styles.button}></TouchableOpacity>
+                
+            )}
+            placeholder="type here to search"
+            ></TextInput>
+            <TouchableOpacity style={styles.button} 
+            
+            onPress={()=>{
+                this.searchTransaction(this.state.search)
+            }}>
+                
+                <Text style={styles.text}> Scan</Text></TouchableOpacity>
 
             </View>
            <FlatList
@@ -101,13 +110,20 @@ render(){
 }
 var styles=StyleSheet.create({
     inputBox:{
-        width:150,
+        width:"70%",
         height:50,
-        borderWidth:2
+        borderWidth:2,
+        alignItems:"center"
     },
     button:{
-        width:150,
+        width:"20%",
         height:50,
-        borderWidth:2
+        borderWidth:2,
+        alignItems:"center",
+        backgroundColor:"pink",
+        justifyContent:"center"
+    },text:{
+        fontSize:15,
+        fontWeight:"bold"
     }
 })
